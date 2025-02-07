@@ -8,12 +8,17 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
 
         #tablero {
             display: grid;
             grid-template-columns: repeat(8, 30px);
             gap: 2px;
+            background-color: #899;
         }
 
         .celda {
@@ -40,7 +45,7 @@
 <body>
     <label for="nivel">Selecciona el nivel</label>
     <select name="nivel" id="nivel">
-        <option>Ninguno</option>
+        <option value="" selected>Ninguno</option>
         <option value="facil">Fácil</option>
         <option value="medio">Medio</option>
         <option value="dificil">Difícil</option>
@@ -71,7 +76,7 @@
                     celda.addEventListener(
                         "click",
                         async (e) => {
-                            //si la celda tiene una bandera no se puede hacer nada 
+                            //si la celda tiene una bandera no se puede hacer nada
                             if (e.target.classList.contains("Bandera")) {
                                 return;
                             }
@@ -86,26 +91,32 @@
                                 .then((data) => {
                                     const spanNumero = document.createElement("span");
                                     e.target.classList.add("revelada");
-                                        if (data.valor != -1 && data.valor != 0) {
-                                            spanNumero.setAttribute(
-                                                "style",
-                                                `color: ${coloresNumeros[data.valor - 1]}`
-                                            );
-                                            spanNumero.textContent = data.valor;
-                                            e.target.appendChild(spanNumero);
-                                        } else if (data.valor == 0) {
-                                            spanNumero.textContent = "";
-                                            e.target.setAttribute("style", "background-color: gray");
-                                            e.target.appendChild(spanNumero);
-                                        } else {
-                                            spanNumero.textContent = "💣";
-                                            e.target.appendChild(spanNumero);
-                                            e.target.style.backgroundColor = "red";
-                                            //si se encuentra una bomba, revelamos todas las bombas
-                                            revelarTodasLasBombas();
-                                            deshabilitarTablero();
-                                            alert("Perdiste");
+                                    if (data.valor != -1 && data.valor != 0) {
+                                        spanNumero.setAttribute(
+                                            "style",
+                                            `color: ${coloresNumeros[data.valor - 1]}`
+                                        );
+                                        spanNumero.textContent = data.valor;
+                                        e.target.appendChild(spanNumero);
+                                    } else if (data.valor == 0) {
+                                        spanNumero.textContent = "";
+                                        e.target.setAttribute("style", "background-color: gray");
+                                        e.target.appendChild(spanNumero);
+                                    } else {
+                                        spanNumero.textContent = "💣";
+                                        e.target.appendChild(spanNumero);
+                                        e.target.style.backgroundColor = "red";
+                                        //si se encuentra una bomba, revelamos todas las bombas
+                                        revelarTodasLasBombas();
+                                        deshabilitarTablero();
+                                        var confirmar = confirm("Perdiste El juego se reiniciará una vez que le des ok dentro de 2 segundos");
+                                        if (confirmar) {
+                                            setTimeout(() => {
+                                                location.reload();
+                                            }, 2000);
+
                                         }
+                                    }
                                 })
                                 .catch((error) => {
                                     console.error("Error", error);
@@ -133,38 +144,38 @@
                 tablero.style.gridTemplateColumns = `repeat(${columnas}, 30px)`;
             }
         }
-        function revelarTodasLasBombas() {  
+        function revelarTodasLasBombas() {
             //obtenemos el elemento del tablero del DOM
-    const tablero = document.getElementById("tablero");
-    //obtenemos todos los hijos del tablero devolviendo un HTMLCollection
-    const celdas = tablero.children;  
-    //recorremos el tablero completo para buscar las bombas
-    //en esta parte obtenemos las filas totales del arreglo
-    for (let i = 0; i <tableroCompleto.length; i++) {  
-        //esta parte obtenemos las celdas del arreglo de la fila  
-        for (let j = 0; j < tableroCompleto[i].length; j++) {
-            //si la celda es una bomba la revelamos  
+            const tablero = document.getElementById("tablero");
+            //obtenemos todos los hijos del tablero devolviendo un HTMLCollection
+            const celdas = tablero.children;
+            //recorremos el tablero completo para buscar las bombas
+            //en esta parte obtenemos las filas totales del arreglo
+            for (let i = 0; i < tableroCompleto.length; i++) {
+                //esta parte obtenemos las celdas del arreglo de la fila
+                for (let j = 0; j < tableroCompleto[i].length; j++) {
+                    //si la celda es una bomba la revelamos
 
-            if (tableroCompleto[i][j] === -1) {  
-                //obtenemos el hijo de la celda en el tablero, por el orden en que se 
-                //crearon las celdas en el tablero como una HTmlCollection
-                const indice = i * tableroCompleto[i].length + j;  
-                // una vez ya sabemos cual es el hijo que corresponde a una bomba, la revelamos
-                const celda = celdas[indice];  
-                if (!celda.classList.contains("revelada")) {  
-                    celda.textContent = "💣";
-                    celda.style.backgroundColor = "red";
-                    celda.classList.add("revelada");
-                }  
-            }  
-        }  
-    }  
-}
+                    if (tableroCompleto[i][j] === -1) {
+                        //obtenemos el hijo de la celda en el tablero, por el orden en que se
+                        //crearon las celdas en el tablero como una HTmlCollection
+                        const indice = i * tableroCompleto[i].length + j;
+                        // una vez ya sabemos cual es el hijo que corresponde a una bomba, la revelamos
+                        const celda = celdas[indice];
+                        if (!celda.classList.contains("revelada")) {
+                            celda.textContent = "💣";
+                            celda.style.backgroundColor = "red";
+                            celda.classList.add("revelada");
+                        }
+                    }
+                }
+            }
+        }
         function deshabilitarTablero() {
             //seleccionamos todas las celdas con la clase celda
-            const celdas = document.querySelectorAll('.celda');
+            const celdas = document.querySelectorAll(".celda");
             //recorremos todas las celdas y deshabilitamos con pointer-events los eventos
-            celdas.forEach(celda => {
+            celdas.forEach((celda) => {
                 celda.style.pointerEvents = "none";
             });
         }
@@ -195,8 +206,8 @@
             })
                 .then((response) => response.json())
                 .then((data) => {
-                    //guardamos el tablero completo en una variable global para poder 
-                    // acceder a el en cualquier parte del código y lograr 
+                    //guardamos el tablero completo en una variable global para poder
+                    // acceder a el en cualquier parte del código y lograr
                     // tener la información de las bombas para luego revelarlas
                     tableroCompleto = data.table;
                     console.log(data);
@@ -206,6 +217,10 @@
                 });
 
             generarTablero(filas, columnas);
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelector("#nivel").value = "";
         });
     </script>
 </body>
