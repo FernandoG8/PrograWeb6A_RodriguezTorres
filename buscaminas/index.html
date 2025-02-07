@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buscaminas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        #tablero {
+            display: grid;
+            grid-template-columns: repeat(8, 30px);
+            gap: 2px;
+        }
+
+        .celda {
+            width: 30px;
+            height: 30px;
+            background-color: #ddd;
+            border: 1px solid #888;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .celda:hover {
+            background-color: #ccc;
+        }
+
+        .celda.revelada {
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <label for="nivel">Selecciona el nivel</label>
+    <select name="nivel" id="nivel">
+        <option>Ninguno</option>
+        <option value="facil">Fácil</option>
+        <option value="medio">Medio</option>
+        <option value="dificil">Difícil</option>
+    </select>
+    <div id="tablero"></div>
+    <script>
+        let tableroCompleto = [];
+        const coloresNumeros = [
+            "blue",
+            "green",
+            "red",
+            "purple",
+            "maroon",
+            "turquoise",
+            "black",
+            "gray",
+        ];
+        function generarTablero(filas, columnas) {
+            var tablero = document.getElementById("tablero");
+            tablero.innerHTML = "";
+            for (let i = 0; i < filas; i++) {
+                for (let j = 0; j < columnas; j++) {
+                    var celda = document.createElement("div");
+                    celda.className = "celda";
+                    celda.textContent = "";
+                    const fila = i;
+                    const columna = j;
+                    celda.addEventListener(
+                        "click",
+                        async (e) => {
+                            //si la celda tiene una bandera no se puede hacer nada 
+                            if (e.target.classList.contains("Bandera")) {
+                                return;
+                            }
+                            await fetch(window.location.href + "revelar_celda.php", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ fila, columna }),
+                            })
+                                .then((response) => response.json())
+                                .then((data) => {
+                                    const spanNumero = document.createElement("span");
+                                    e.target.classList.add("revelada");
+                                        if (data.valor != -1 && data.valor != 0) {
+                                            spanNumero.setAttribute(
+                                                "style",
+                                                `color: ${coloresNumeros[data.valor - 1]}`
+                                            );
+                                            spanNumero.textContent = data.valor;
+                                            e.target.appendChild(spanNumero);
+                                        } else if (data.valor == 0) {
+                                            spanNumero.textContent = "";
+                                            e.target.setAttribute("style", "background-color: gray");
+                                            e.target.appendChild(spanNumero);
+                                        } else {
+                                            spanNumero.textContent = "💣";
+                                            e.target.appendChild(spanNumero);
+                                            e.target.style.backgroundColor = "red";
+                                            //si se encuentra una bomba, revelamos todas las bombas
+                                            revelarTodasLasBombas();
+                                            deshabilitarTablero();
+                                            alert("Perdiste");
+                                        }
+                                })
+                                .catch((error) => {
+                                    console.error("Error", error);
+                                });
+                        },
+                        fila,
+                        columna
+                    );
+                    celda.addEventListener("contextmenu", async (e) => {
+                        e.preventDefault();
+                        if (e.target.classList.contains("revelada")) {
+                            return;
+                        }
+                        if (!e.target.classList.contains("Bandera")) {
+                            e.target.classList.add("Bandera");
+                            e.target.textContent = "🚩";
+                        } else {
+                            e.target.classList.remove("Bandera");
+                            e.target.textContent = "";
+                        }
+                    });
+
+                    tablero.appendChild(celda);
+                }
+                tablero.style.gridTemplateColumns = `repeat(${columnas}, 30px)`;
+            }
+        }
+        function revelarTodasLasBombas() {  
+            //obtenemos el elemento del tablero del DOM
+    const tablero = document.getElementById("tablero");
+    //obtenemos todos los hijos del tablero devolviendo un HTMLCollection
+    const celdas = tablero.children;  
+    //recorremos el tablero completo para buscar las bombas
+    //en esta parte obtenemos las filas totales del arreglo
+    for (let i = 0; i <tableroCompleto.length; i++) {  
+        //esta parte obtenemos las celdas del arreglo de la fila  
+        for (let j = 0; j < tableroCompleto[i].length; j++) {
+            //si la celda es una bomba la revelamos  
+
+            if (tableroCompleto[i][j] === -1) {  
+                //obtenemos el hijo de la celda en el tablero, por el orden en que se 
+                //crearon las celdas en el tablero como una HTmlCollection
+                const indice = i * tableroCompleto[i].length + j;  
+                // una vez ya sabemos cual es el hijo que corresponde a una bomba, la revelamos
+                const celda = celdas[indice];  
+                if (!celda.classList.contains("revelada")) {  
+                    celda.textContent = "💣";
+                    celda.style.backgroundColor = "red";
+                    celda.classList.add("revelada");
+                }  
+            }  
+        }  
+    }  
+}
+        function deshabilitarTablero() {
+            //seleccionamos todas las celdas con la clase celda
+            const celdas = document.querySelectorAll('.celda');
+            //recorremos todas las celdas y deshabilitamos con pointer-events los eventos
+            celdas.forEach(celda => {
+                celda.style.pointerEvents = "none";
+            });
+        }
+        document.querySelector("#nivel").addEventListener("change", async (e) => {
+            //obtener el nivel seleccionado
+            var nivel = document.getElementById("nivel").value;
+            var filas, columnas;
+            switch (nivel) {
+                case "facil":
+                    filas = 8;
+                    columnas = 8;
+                    break;
+                case "medio":
+                    filas = 16;
+                    columnas = 16;
+                    break;
+                case "dificil":
+                    filas = 16;
+                    columnas = 30;
+                    break;
+            }
+            await fetch(window.location.href + "generar_tablero.php", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ nivel }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    //guardamos el tablero completo en una variable global para poder 
+                    // acceder a el en cualquier parte del código y lograr 
+                    // tener la información de las bombas para luego revelarlas
+                    tableroCompleto = data.table;
+                    console.log(data);
+                })
+                .catch((error) => {
+                    console.error("Error", error);
+                });
+
+            generarTablero(filas, columnas);
+        });
+    </script>
+</body>
+
+</html>
